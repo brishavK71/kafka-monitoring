@@ -1,0 +1,99 @@
+version: '3.8'
+
+services:
+  # Prometheus for metrics collection
+  prometheus:
+    image: prom/prometheus:latest
+    container_name: prometheus
+    restart: unless-stopped
+    ports:
+      - "9090:9090"
+    volumes:
+      - ./prometheus.yml:/etc/prometheus/prometheus.yml
+      - ./kafka_alert_rules.yml:/etc/prometheus/kafka_alert_rules.yml
+      - prometheus-data:/prometheus
+    command:
+      - '--config.file=/etc/prometheus/prometheus.yml'
+      - '--storage.tsdb.path=/prometheus'
+      - '--web.console.libraries=/etc/prometheus/console_libraries'
+      - '--web.console.templates=/etc/prometheus/consoles'
+      - '--web.enable-lifecycle'
+    network_mode: host
+
+  # Alertmanager for alert routing and notifications
+  alertmanager:
+    image: prom/alertmanager:latest
+    container_name: alertmanager
+    restart: unless-stopped
+    ports:
+      - "9093:9093"
+    volumes:
+      - ./alertmanager.yml:/etc/alertmanager/alertmanager.yml
+      - alertmanager-data:/alertmanager
+    command:
+      - '--config.file=/etc/alertmanager/alertmanager.yml'
+      - '--storage.path=/alertmanager'
+    network_mode: host
+
+  # Blackbox Exporter for TCP/HTTP probes
+  blackbox-exporter:
+    image: prom/blackbox-exporter:latest
+    container_name: blackbox-exporter
+    restart: unless-stopped
+    ports:
+      - "9115:9115"
+    volumes:
+      - ./blackbox.yml:/etc/blackbox_exporter/config.yml
+    command:
+      - '--config.file=/etc/blackbox_exporter/config.yml'
+    network_mode: host
+
+  # JMX Exporter for Zookeeper
+  jmx-zookeeper:
+    image: bitnami/jmx-exporter:latest
+    container_name: jmx-zookeeper
+    restart: unless-stopped
+    ports:
+      - "7071:7071"
+    environment:
+      - JMX_PORT=7071
+      - SERVICE_PORT=2181
+    volumes:
+      - ./jmx-zookeeper-config.yml:/etc/jmx_exporter/config.yml
+    network_mode: host
+
+  # JMX Exporter for Kafka Broker
+  jmx-kafka:
+    image: bitnami/jmx-exporter:latest
+    container_name: jmx-kafka
+    restart: unless-stopped
+    ports:
+      - "7072:7072"
+    environment:
+      - JMX_PORT=7072
+      - SERVICE_PORT=9092
+    volumes:
+      - ./jmx-kafka-config.yml:/etc/jmx_exporter/config.yml
+    network_mode: host
+
+  # Node Exporter for system metrics
+  node-exporter:
+    image: prom/node-exporter:latest
+    container_name: node-exporter
+    restart: unless-stopped
+    ports:
+      - "9100:9100"
+    command:
+      - '--path.procfs=/host/proc'
+      - '--path.sysfs=/host/sys'
+      - '--path.rootfs=/host'
+      - '--collector.filesystem.mount-points-exclude=^/(sys|proc|dev|host|etc)($$|/)'
+    volumes:
+      - /proc:/host/proc:ro
+      - /sys:/host/sys:ro
+      - /:/host:ro
+    network_mode: host
+
+volumes:
+  prometheus-data:
+  alertmanager-data:

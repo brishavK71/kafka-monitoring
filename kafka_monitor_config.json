@@ -1,0 +1,26 @@
+{
+  "zookeeper": {
+    "host": "localhost",
+    "port": 2181
+  },
+  "kafka_broker": {
+    "host": "localhost",
+    "port": 9092
+  },
+  "kafka_connect": {
+    "host": "localhost",
+    "port": 8083
+  },
+  "smtp": {
+    "server": "smtp.gmail.com",
+    "port": 587,
+    "use_tls": true,
+    "username": "your-email@gmail.com",
+    "password": "your-app-password",
+    "from_email": "your-email@gmail.com",
+    "to_emails": [
+      "alert-recipient@example.com",
+      "another-recipient@example.com"
+    ]
+  }
+}

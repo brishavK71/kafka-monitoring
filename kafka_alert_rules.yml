@@ -1,0 +1,127 @@
+groups:
+  - name: kafka_alerts
+    interval: 30s
+    rules:
+      # Zookeeper Alerts
+      - alert: ZookeeperDown
+        expr: up{job="zookeeper"} == 0
+        for: 1m
+        labels:
+          severity: critical
+          service: zookeeper
+        annotations:
+          summary: "Zookeeper is down"
+          description: "Zookeeper on port 2128 has been down for more than 1 minute."
+
+      - alert: ZookeeperTCPCheckFailed
+        expr: probe_success{job="blackbox-tcp",instance="localhost:2128"} == 0
+        for: 1m
+        labels:
+          severity: critical
+          service: zookeeper
+        annotations:
+          summary: "Zookeeper TCP check failed"
+          description: "Cannot establish TCP connection to Zookeeper on port 2128."
+
+      # Kafka Broker Alerts
+      - alert: KafkaBrokerDown
+        expr: up{job="kafka-broker"} == 0
+        for: 1m
+        labels:
+          severity: critical
+          service: kafka-broker
+        annotations:
+          summary: "Kafka Broker is down"
+          description: "Kafka Broker on port 9092 has been down for more than 1 minute."
+
+      - alert: KafkaBrokerTCPCheckFailed
+        expr: probe_success{job="blackbox-tcp",instance="localhost:9092"} == 0
+        for: 1m
+        labels:
+          severity: critical
+          service: kafka-broker
+        annotations:
+          summary: "Kafka Broker TCP check failed"
+          description: "Cannot establish TCP connection to Kafka Broker on port 9092."
+
+      - alert: KafkaBrokerHighMemoryUsage
+        expr: jvm_memory_used_bytes{job="kafka-broker"} / jvm_memory_max_bytes{job="kafka-broker"} > 0.9
+        for: 5m
+        labels:
+          severity: warning
+          service: kafka-broker
+        annotations:
+          summary: "Kafka Broker high memory usage"
+          description: "Kafka Broker memory usage is above 90% for more than 5 minutes."
+
+      # Kafka Connect Alerts
+      - alert: KafkaConnectDown
+        expr: up{job="kafka-connect"} == 0
+        for: 1m
+        labels:
+          severity: critical
+          service: kafka-connect
+        annotations:
+          summary: "Kafka Connect is down"
+          description: "Kafka Connect on port 8083 has been down for more than 1 minute."
+
+      - alert: KafkaConnectTCPCheckFailed
+        expr: probe_success{job="blackbox-tcp",instance="localhost:8083"} == 0
+        for: 1m
+        labels:
+          severity: critical
+          service: kafka-connect
+        annotations:
+          summary: "Kafka Connect TCP check failed"
+          description: "Cannot establish TCP connection to Kafka Connect on port 8083."
+
+      - alert: KafkaConnectorFailed
+        expr: kafka_connect_connector_status{state="FAILED"} > 0
+        for: 1m
+        labels:
+          severity: critical
+          service: kafka-connect
+        annotations:
+          summary: "Kafka Connector in FAILED state"
+          description: "Connector {{ $labels.connector }} is in FAILED state."
+
+      - alert: KafkaConnectorNotRunning
+        expr: kafka_connect_connector_status{state!="RUNNING"} > 0
+        for: 2m
+        labels:
+          severity: warning
+          service: kafka-connect
+        annotations:
+          summary: "Kafka Connector not running"
+          description: "Connector {{ $labels.connector }} is in {{ $labels.state }} state (not RUNNING)."
+
+      - alert: KafkaConnectorTaskFailed
+        expr: kafka_connect_connector_task_status{state="FAILED"} > 0
+        for: 1m
+        labels:
+          severity: critical
+          service: kafka-connect
+        annotations:
+          summary: "Kafka Connector task failed"
+          description: "Task {{ $labels.task }} of connector {{ $labels.connector }} is in FAILED state."
+
+      # System Alerts
+      - alert: HighCPUUsage
+        expr: 100 - (avg by (instance) (irate(node_cpu_seconds_total{mode="idle"}[5m])) * 100) > 80
+        for: 5m
+        labels:
+          severity: warning
+          service: system
+        annotations:
+          summary: "High CPU usage detected"
+          description: "CPU usage is above 80% for more than 5 minutes on {{ $labels.instance }}."
+
+      - alert: HighDiskUsage
+        expr: (node_filesystem_avail_bytes{mountpoint="/"} / node_filesystem_size_bytes{mountpoint="/"}) < 0.1
+        for: 5m
+        labels:
+          severity: warning
+          service: system
+        annotations:
+          summary: "Low disk space"
+          description: "Less than 10% disk space available on {{ $labels.instance }}."
